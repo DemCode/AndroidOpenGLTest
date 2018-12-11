@@ -1,52 +1,52 @@
 package ru.edvpk.opengltest;
 
 import android.opengl.GLES20;
+import android.support.annotation.NonNull;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
-import java.nio.ShortBuffer;
-
-import javax.microedition.khronos.opengles.GL;
 
 class Shape {
     private FloatBuffer mVertexBuffer;
     private ByteBuffer mDrawListBuffer;
     private int mProgram;
-    private int mVertexCount;
+    //private int mVertexCount;
     private int mDrawListCount;
-    private static final float[] color = { 0.60f, 0.35f, 0.85f, 1.0f };
-
-    private final static int COORDS_PER_VERTEX = 3;
-    private final static int STRIDE = COORDS_PER_VERTEX * 4;
+    private int mCoordsPerVertex;
+    private int mColorsPerVertex;
 
     private final String vertexShaderCode =
             "attribute vec4 a_Position;" +
+            "attribute vec4 a_Color;" +
             "uniform mat4 u_Matrix;" +
+            "varying vec4 v_Color;" +
             "void main() {" +
-            "   gl_Position = u_Matrix * a_Position;" +
+            "    gl_Position = u_Matrix * a_Position;" +
+            "    v_Color = a_Color;" +
             "}";
     private final String fragmentShaderCode =
             "precision mediump float;" +
-            "uniform vec4 u_Color;" +
+            "varying vec4 v_Color;" +
             "void main() {" +
-            "   gl_FragColor = u_Color;" +
+            "    gl_FragColor = v_Color;" +
             "}";
 
-    public Shape(float coords[], byte drawList[]) {
+    public Shape(@NonNull float coords[], @NonNull byte drawList[], int coordsPerVertex, int colorsPerVertex) {
         ByteBuffer vb = ByteBuffer.allocateDirect(coords.length * 4);
         vb.order(ByteOrder.nativeOrder());
         mVertexBuffer = vb.asFloatBuffer();
         mVertexBuffer.put(coords);
-        mVertexBuffer.position(0);
 
         ByteBuffer dlb = ByteBuffer.allocateDirect(drawList.length * 1);
         dlb.order(ByteOrder.nativeOrder());
-        mDrawListBuffer = dlb; //.asShortBuffer();
+        mDrawListBuffer = dlb;
         mDrawListBuffer.put(drawList);
-        mDrawListBuffer.position(0);
 
-        mVertexCount = coords.length / COORDS_PER_VERTEX;
+        mCoordsPerVertex = coordsPerVertex;
+        mColorsPerVertex = colorsPerVertex;
+
+        //mVertexCount = coords.length / (mCoordsPerVertex + mColorsPerVertex);
         mDrawListCount = drawList.length;
 
         int vertexShader = MyGLRenderer.loadShader(GLES20.GL_VERTEX_SHADER, vertexShaderCode);
@@ -61,19 +61,25 @@ class Shape {
     public void draw(float[] mVPMatrix) {
         GLES20.glUseProgram(mProgram);
 
+        int stride = (mCoordsPerVertex + mColorsPerVertex) * 4;
+
         int positionHandle = GLES20.glGetAttribLocation(mProgram, "a_Position");
+        mVertexBuffer.position(0);
+        GLES20.glVertexAttribPointer(positionHandle, mCoordsPerVertex, GLES20.GL_FLOAT, false, stride, mVertexBuffer);
         GLES20.glEnableVertexAttribArray(positionHandle);
-        GLES20.glVertexAttribPointer(positionHandle, COORDS_PER_VERTEX, GLES20.GL_FLOAT, false, 0 /* STRIDE */, mVertexBuffer);
+
+        int colorHandle = GLES20.glGetAttribLocation(mProgram, "a_Color");
+        mVertexBuffer.position(mCoordsPerVertex);
+        GLES20.glVertexAttribPointer(colorHandle, mColorsPerVertex, GLES20.GL_FLOAT, false, stride, mVertexBuffer);
+        GLES20.glEnableVertexAttribArray(colorHandle);
 
         int matrixHandle = GLES20.glGetUniformLocation(mProgram, "u_Matrix");
         GLES20.glUniformMatrix4fv(matrixHandle, 1, false, mVPMatrix, 0);
 
-        int colorHandle = GLES20.glGetUniformLocation(mProgram, "u_Color");
-        GLES20.glUniform4fv(colorHandle, 1, color, 0);
-
-        //GLES20.glDrawArrays(GLES20.GL_TRIANGLES, 0, mVertexCount);
+        mDrawListBuffer.position(0);
         GLES20.glDrawElements(GLES20.GL_TRIANGLES, mDrawListCount, GLES20.GL_UNSIGNED_BYTE, mDrawListBuffer);
 
         GLES20.glDisableVertexAttribArray(positionHandle);
+        GLES20.glDisableVertexAttribArray(colorHandle);
     }
 }
