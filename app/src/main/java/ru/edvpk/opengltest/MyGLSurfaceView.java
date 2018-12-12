@@ -35,7 +35,7 @@ class MyGLSurfaceView extends GLSurfaceView {
                 mPreviousY = y;
 
                 mRenderer.setViewAngleY(mRenderer.getViewAngleY() + dx * TOUCH_SCALE_FACTOR);
-                mRenderer.setViewAngleZ(mRenderer.getViewAngleZ() + dy * TOUCH_SCALE_FACTOR);
+                mRenderer.setViewAngleX(mRenderer.getViewAngleX() - dy * TOUCH_SCALE_FACTOR);
         }
 
         return true; //super.onTouchEvent(event);

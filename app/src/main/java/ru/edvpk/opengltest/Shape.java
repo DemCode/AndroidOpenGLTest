@@ -11,26 +11,9 @@ class Shape {
     private FloatBuffer mVertexBuffer;
     private ByteBuffer mDrawListBuffer;
     private int mProgram;
-    //private int mVertexCount;
     private int mDrawListCount;
     private int mCoordsPerVertex;
     private int mColorsPerVertex;
-
-    private final String vertexShaderCode =
-            "attribute vec4 a_Position;" +
-            "attribute vec4 a_Color;" +
-            "uniform mat4 u_Matrix;" +
-            "varying vec4 v_Color;" +
-            "void main() {" +
-            "    gl_Position = u_Matrix * a_Position;" +
-            "    v_Color = a_Color;" +
-            "}";
-    private final String fragmentShaderCode =
-            "precision mediump float;" +
-            "varying vec4 v_Color;" +
-            "void main() {" +
-            "    gl_FragColor = v_Color;" +
-            "}";
 
     public Shape(@NonNull float coords[], @NonNull byte drawList[], int coordsPerVertex, int colorsPerVertex) {
         ByteBuffer vb = ByteBuffer.allocateDirect(coords.length * 4);
@@ -38,7 +21,7 @@ class Shape {
         mVertexBuffer = vb.asFloatBuffer();
         mVertexBuffer.put(coords);
 
-        ByteBuffer dlb = ByteBuffer.allocateDirect(drawList.length * 1);
+        ByteBuffer dlb = ByteBuffer.allocateDirect(drawList.length); // size of byte is 1
         dlb.order(ByteOrder.nativeOrder());
         mDrawListBuffer = dlb;
         mDrawListBuffer.put(drawList);
@@ -46,16 +29,9 @@ class Shape {
         mCoordsPerVertex = coordsPerVertex;
         mColorsPerVertex = colorsPerVertex;
 
-        //mVertexCount = coords.length / (mCoordsPerVertex + mColorsPerVertex);
         mDrawListCount = drawList.length;
 
-        int vertexShader = MyGLRenderer.loadShader(GLES20.GL_VERTEX_SHADER, vertexShaderCode);
-        int fragmentShader = MyGLRenderer.loadShader(GLES20.GL_FRAGMENT_SHADER, fragmentShaderCode);
-
-        mProgram = GLES20.glCreateProgram();
-        GLES20.glAttachShader(mProgram, vertexShader);
-        GLES20.glAttachShader(mProgram, fragmentShader);
-        GLES20.glLinkProgram(mProgram);
+        mProgram = ShaderUtils.getProgram();
     }
 
     public void draw(float[] mVPMatrix) {
